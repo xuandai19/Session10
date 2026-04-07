@@ -1,17 +1,3 @@
--- 3 Trigger
-    -- Khi thêm đơn hàng:
-        -- Khi thêm thì phải trừ đi stock thông qua quantity ở order
-        -- Kiểm tra tồn kho trước khi trừ
-        -- stock = stock - NEW.quantity (Order)
-    -- Cập nhật số lượng tồn kho
-        -- if NEW.quantity > OLD.quantity -- đăng tăng
-        -- Kiểm tra stock có đủ tồn kho hay không
-        -- > cần phải trừ đi stock
-        -- Ngược lại thì tương tự
-    -- Huỷ hàng
-        -- Cập nhật trạng thái về CANCELLED
-        -- Cập nhật stock sản phẩm tất cả từ order được huỷ
-
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255),
@@ -64,7 +50,6 @@ VALUES (1, 1, 'Completed'),
        (5, 1, 'Pending'),
        (4, 3, 'Cancelled');
 
--- Tạo function update insert
 CREATE OR REPLACE FUNCTION fn_trg_before_update()
 RETURNS TRIGGER AS $$
     DECLARE
@@ -75,7 +60,6 @@ RETURNS TRIGGER AS $$
         FROM products
         WHERE id = NEW.product_id;
         IF (NEW.quantity > OLD.quantity) THEN
-            -- đang tăng
             v_change_quantity := NEW.quantity - OLD.quantity;
             IF (v_change_quantity > v_stock) THEN
                 RAISE EXCEPTION 'Không đủ số luọng';
@@ -100,7 +84,6 @@ RETURNS TRIGGER AS $$
         RETURN NEW;
     end;
     $$ LANGUAGE plpgsql;
--- Tạo trigger
 CREATE OR REPLACE TRIGGER trg_before_update_order
 BEFORE UPDATE ON orders
 FOR EACH ROW
@@ -109,7 +92,6 @@ EXECUTE FUNCTION fn_trg_before_update();
 UPDATE orders
 SET quantity = 7
 WHERE id = 1;
-
 
 UPDATE orders
 SET order_status = 'Cancelled'
